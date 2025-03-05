@@ -1,0 +1,62 @@
+name: Merge Rules
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 每天 UTC 时间 0 点（北京时间 8 点）
+  workflow_dispatch:     # 允许手动触发
+
+jobs:
+  merge-and-clean:
+    runs-on: ubuntu-latest
+    env:
+      TZ: 'Asia/Shanghai'
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+
+    - name: Install mihomo
+      run: |
+        version=$(curl -fsSL https://github.com/MetaCubeX/mihomo/releases/download/Prerelease-Alpha/version.txt)
+        curl -fsSL -o mihomo.deb "https://github.com/MetaCubeX/mihomo/releases/download/Prerelease-Alpha/mihomo-linux-amd64-${version}.deb"
+        sudo dpkg -i mihomo.deb
+
+    - name: Merge AdRules and hagezi
+      run: |
+        curl -fsSL https://adrules.top/adrules_domainset.txt -o adrules_domainset.txt
+        curl -fsSL https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/multi.txt -o multi.txt
+        cat adrules_domainset.txt multi.txt | sed '/^#/d' | sort | uniq > combined.txt
+        awk '/^\+\./ {gsub(/^\+/, "*"); print}' combined.txt > exclude_list.txt
+        awk 'NR==FNR {exclude[$0]; next} !($0 in exclude)' exclude_list.txt combined.txt | sort | uniq > ADs_merged_temp.txt
+        mihomo convert-ruleset domain text ADs_merged_temp.txt ADs_merged.mrs
+
+    - name: Convert AWAvenue rules
+      run: |
+        curl -fsSL -o AWAvenue-Ads-Rule-Clash.yaml https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/main/Filters/AWAvenue-Ads-Rule-Clash.yaml
+        mihomo convert-ruleset domain yaml AWAvenue-Ads-Rule-Clash.yaml ADs_AWAvenue.mrs
+
+    - name: Convert speedtest rules
+      run: |
+        curl -fsSL -o speedtest.txt https://ruleset.skk.moe/Clash/domainset/speedtest.txt
+        mihomo convert-ruleset domain text speedtest.txt speedtest.mrs
+
+    - name: Commit and push changes
+      run: |
+        mkdir -p rules
+        mv *.mrs rules/
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git checkout --orphan mihomo
+        git rm -rf .
+        git add rules/*.mrs
+        git commit -m "Auto Update $(date +'%Y-%m-%d %H:%M')"
+        git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/cqr100/mrs.git
+        git push -f origin mihomo
+
+    - name: Cleanup workflow runs
+      uses: Mattraks/delete-workflow-runs@main
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        repository: ${{ github.repository }}
+        retain_days: 0
+        keep_minimum_runs: 2
