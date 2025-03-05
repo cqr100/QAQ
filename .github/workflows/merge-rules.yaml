@@ -35,6 +35,11 @@ jobs:
         curl -fsSL -o AWAvenue-Ads-Rule-Clash.yaml https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/main/Filters/AWAvenue-Ads-Rule-Clash.yaml
         mihomo convert-ruleset domain yaml AWAvenue-Ads-Rule-Clash.yaml ADs_AWAvenue.mrs
 
+    - name: Convert 10007_auto rules
+      run: |
+        curl -fsSL -o 10007_auto.txt https://raw.githubusercontent.com/lingeringsound/10007_auto/master/all
+        mihomo convert-ruleset domain text 10007_auto.txt 10007_auto.mrs
+
     - name: Convert speedtest rules
       run: |
         curl -fsSL -o speedtest.txt https://ruleset.skk.moe/Clash/domainset/speedtest.txt
