@@ -33,7 +33,7 @@ jobs:
     - name: Convert AWAvenue rules
       run: |
         curl -fsSL -o AWAvenue-Ads-Rule-Clash.yaml https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/main/Filters/AWAvenue-Ads-Rule-Clash.yaml
-        mihomo convert-ruleset domain yaml AWAvenue-Ads-Rule-Clash.yaml ADs_AWAvenue.mrs
+        mihomo convert-ruleset domain yaml AWAvenue-Ads-Rule-Clash.yaml AWAvenue.mrs
 
     - name: Convert 10007 rules
       run: |
